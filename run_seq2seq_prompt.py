@@ -2,6 +2,7 @@ import os
 import argparse
 import numpy as np
 from transformers import (
+    AutoConfig,
     AutoModelForSeq2SeqLM,
     DataCollatorForSeq2Seq,
     AutoTokenizer,
@@ -18,14 +19,13 @@ import evaluate
 from transformers import Trainer, TrainingArguments
 import pathlib
 from peft import (
-    LoraConfig,
+    PromptTuningConfig,
+    PromptTuningInit,
     get_peft_model,
     get_peft_model_state_dict,
     prepare_model_for_int8_training,
     set_peft_model_state_dict,
 )
-os.system("pip --trusted-host pypi.org --trusted-host files.pythonhosted.org install thop")
-from thop import profile
 
 def parse_arge():
     """Parse the arguments."""
@@ -65,44 +65,33 @@ def training_function(args):
     eval_dataset = load_from_disk(os.path.join(args.dataset_path, "eval"))
     tokenizer = AutoTokenizer.from_pretrained(args.model_id)
     # Save our tokenizer and create model card
-    output_dir = 'my-' + args.model_id.split("/")[-1] + '-lora'
-    tokenizer.save_pretrained(output_dir)
-    # load model from the hub
-    model = AutoModelForSeq2SeqLM.from_pretrained(
-        args.model_id,
-        use_cache=False if args.gradient_checkpointing else True,  # this is needed for gradient checkpointing
-    )
+    output_dir = 'my-' + args.model_id.split("/")[-1] + '-prompt_num_virtual_tokens_100'
 
-    model.config.n_positions = args.max_position_embedding
-    config = LoraConfig(
-        r=16,
-        lora_alpha=32,
-        target_modules=["q", "v"],
-        lora_dropout=0.05,
-        bias="none",
-        task_type="SEQ_2_SEQ_LM",
-    )
+    tokenizer.save_pretrained(output_dir)
+    # load config from the hub
+    model_config = AutoConfig.from_pretrained(args.model_id)
+    model_config.n_positions = args.max_position_embedding
+    #model = AutoModelForSeq2SeqLM.from_pretrained(args.model_id, config=model_config)
+    model = AutoModelForSeq2SeqLM.from_config(model_config)
+    # set use_cache to False to speed up decoding
+    config = PromptTuningConfig(task_type="SEQ_2_SEQ_LM", 
+                                prompt_tuning_init=PromptTuningInit.TEXT,
+                                num_virtual_tokens=100,
+                                prompt_tuning_init_text="Summarize the PET report:\n",
+                                inference_mode=False,
+                                tokenizer_name_or_path=args.model_id,
+                                )
+    # https://github.com/huggingface/peft/blob/c33c42f1582b13e9b14b6b9467eff9275164ea36/examples/conditional_generation/
+    
     # prepare int-8 model for training
     #model = prepare_model_for_int8_training(model)
     model.enable_input_require_grads()
+    # add adaptor
     model = get_peft_model(model, config)
     model.print_trainable_parameters()  # Be more transparent about the % of trainable params.
-
-    '''
-    # Create a dummy input for the model
-    # The input shape might need to be adjusted depending on the model's expected input
-    input_ids = torch.randint(0, 32128, (1, 1024))  # Example input (batch size of 1, sequence length of 512)
-    attention_mask = torch.ones(1, 1024).int()
-    
-    # Use torch.no_grad() to avoid unnecessary computations
-    with torch.no_grad():
-        flops, params = profile(model, inputs=(input_ids, attention_mask), verbose=False)
-
-    flops_in_gflops = flops / 1e9
-    # Calculate FLOPs
-    print(f"FLOPs: {flops_in_gflops}", f"Params: {params}")
-    ''' 
+    # see model architecture
     exit()
+
     # we want to ignore tokenizer pad token in the loss
     label_pad_token_id = -100
     # Data collator
@@ -133,7 +122,6 @@ def training_function(args):
         output_dir=output_dir,
         per_device_train_batch_size=args.per_device_train_batch_size,
         per_device_eval_batch_size=args.per_device_eval_batch_size,
-        #auto_find_batch_size=True,
         do_train=True,
         do_eval=False,
         evaluation_strategy="no",
@@ -162,7 +150,6 @@ def training_function(args):
         eval_dataset=eval_dataset,
         data_collator=data_collator,
         compute_metrics=compute_metrics) 
-    # callbacks=[EarlyStoppingCallback(early_stopping_patience=5)]
 
     # Start training
     trainer.train()

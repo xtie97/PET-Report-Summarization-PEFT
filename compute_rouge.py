@@ -82,9 +82,9 @@ if __name__ == '__main__':
     r3_list = []
     rl_list = []
     rls_list = []
-    for test_epoch in [8]:
+    for test_epoch in [6,7,8,9,10,11]:
         #Get data
-        df = pd.read_excel(f'./flan_t5_large_lora/test_{test_epoch}.xlsx') 
+        df = pd.read_excel(f'./flan_t5_xl_lora/test_{test_epoch}.xlsx') 
                                                         
         r1, r2, r3, rl, rlsum = predict_text(df)
         r1_list.append(r1)
