@@ -1,4 +1,4 @@
-# Automatic Impression Generation for Positron Emission Tomography Reports using Lightweight Adaptation of Pretrained Large Language Models:bookmark_tabs:
+# Automatic Impression Generation for Positron Emission Tomography Reports using Lightweight Adaptation of Pretrained Large Language Models :bookmark_tabs:
 
 This repository contains the code for our team project (Nuohao Liu, Xin Tie, Xiaogeng Liu) for the course CS776 Advanced NLP. 
 
