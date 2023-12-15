@@ -1,6 +1,6 @@
 # Automatic Impression Generation for Positron Emission Tomography Reports using Lightweight Adaptation of Pretrained Large Language Models :bookmark_tabs:
 
-This repository contains the code for our team project (Nuohao Liu, Xin Tie, Xiaogeng Liu) for the course CS776 Advanced Natural Language Processing. 
+This repository contains the code for our team project (member: Nuohao Liu, Xin Tie, Xiaogeng Liu) as part of the **CS776** Advanced Natural Language Processing course. To check our presentation📜: (https://github.com/xtie97/PET-Report-Summarization-PEFT/blob/main/presentation.pdf)
 
 ## Overview :mag_right:
 **Background**: 
