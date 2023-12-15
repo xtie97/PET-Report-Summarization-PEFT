@@ -12,7 +12,7 @@ We investigated three PEFT techniques:
 - (IA)3
 - Prompt tuning 
 
-The training was powered by [**deepspeed**]([https://github.com/microsoft/DeepSpeed])
+The training was powered by [**deepspeed**](https://github.com/microsoft/DeepSpeed)
 
 To run the training
 ```bash
